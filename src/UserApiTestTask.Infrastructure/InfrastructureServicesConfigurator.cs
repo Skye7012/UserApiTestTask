@@ -1,12 +1,11 @@
-using System.Text;
 using HostInitActions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.IdentityModel.Tokens;
+using UserApiTestTask.Application.Common.Extensions;
 using UserApiTestTask.Application.Common.Interfaces;
-using UserApiTestTask.Application.Common.Static;
+using UserApiTestTask.Infrastructure.Configs;
 using UserApiTestTask.Infrastructure.InitExecutors;
 using UserApiTestTask.Infrastructure.Persistence;
 using UserApiTestTask.Infrastructure.Services;
@@ -21,41 +20,43 @@ public static class InfrastructureServicesConfigurator
 	/// <summary>
 	/// Сконфигурировать сервисы
 	/// </summary>
-	/// <param name="builder">Билдер приложения</param>
-	public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, ConfigurationManager configurationManager)
+	/// <param name="services">Билдер приложения</param>
+	/// <param name="configuration">Конфигурации приложения</param>
+	public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
 		=> services
-			.AddAuthorization(configurationManager)
-			.AddDatabase(configurationManager)
+			.AddAuthorization(configuration)
+			.AddDatabase(configuration)
+			.AddRedis(configuration)
 			.AddInitExecutors();
 
 	/// <summary>
 	/// Сконфигурировать сервисы авторизации
 	/// </summary>
 	/// <param name="services">Сервисы</param>
-	/// <param name="configurationManager">Менеджер конфигурации приложения</param>
-	private static IServiceCollection AddAuthorization(this IServiceCollection services, ConfigurationManager configurationManager)
+	/// <param name="configuration">Конфигурации приложения</param>
+	private static IServiceCollection AddAuthorization(this IServiceCollection services, IConfiguration configuration)
 	{
-		services.AddTransient<IUserService, UserService>();
+		services
+			.AddTransient<IPasswordService, PasswordService>()
+			.AddTransient<ITokenService, TokenService>()
+			.AddTransient<IRefreshTokenValidator, RefreshTokenValidator>()
+			.AddTransient<IAuthorizationService, AuthorizationService>();
+
+		var jwtConfig = services.ConfigureAndGet<JwtConfig>(
+			configuration,
+			JwtConfig.ConfigSectionName);
+
+		var tokenValidationParameters = jwtConfig.BuildTokenValidationParameters();
+
+		services
+			.AddSingleton(tokenValidationParameters)
+			.AddTransient<IRefreshTokenValidator, RefreshTokenValidator>();
 
 		services
 			.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-			.AddJwtBearer(options =>
-				options.TokenValidationParameters = new TokenValidationParameters
-				{
-					ValidateIssuerSigningKey = true,
-					IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8
-						.GetBytes(configurationManager.GetSection("AppSettings:Token").Value!)),
-					ValidateIssuer = false,
-					ValidateAudience = false,
-					ValidateLifetime = true,
-				});
+			.AddJwtBearer(options => options.TokenValidationParameters = tokenValidationParameters);
 
-		services.AddAuthorization(o =>
-		{
-			o.AddPolicy(
-				CustomPolicies.IsAdminClaimPolicy,
-				p => p.RequireClaim(CustomClaims.IsAdminClaimName, (true).ToString()));
-		});
+		services.AddAuthorization();
 
 		return services;
 	}
@@ -64,10 +65,10 @@ public static class InfrastructureServicesConfigurator
 	/// Сконфигурировать подключение к БД
 	/// </summary>
 	/// <param name="services">Сервисы</param>
-	/// <param name="configurationManager">Менеджер конфигурации приложения</param>
-	private static IServiceCollection AddDatabase(this IServiceCollection services, ConfigurationManager configurationManager)
+	/// <param name="configuration">Конфигурации приложения</param>
+	private static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration)
 	{
-		var connString = configurationManager.GetConnectionString("Db")!;
+		var connString = configuration.GetConnectionString("Db")!;
 		services.AddDbContext<ApplicationDbContext>(opt =>
 			{
 				opt.UseNpgsql(connString);
@@ -75,6 +76,17 @@ public static class InfrastructureServicesConfigurator
 			});
 
 		return services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
+	}
+
+	/// <summary>
+	/// Сконфигурировать Redis
+	/// </summary>
+	/// <param name="services">Сервисы</param>
+	/// <param name="configuration">Конфигурации приложения</param>
+	private static IServiceCollection AddRedis(this IServiceCollection services, IConfiguration configuration)
+	{
+		var connString = configuration.GetConnectionString("Redis")!;
+		return services.AddStackExchangeRedisCache(opt => opt.Configuration = connString);
 	}
 
 	/// <summary>

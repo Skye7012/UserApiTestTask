@@ -1,9 +1,9 @@
 using System.Reflection;
-using System.Text.Json.Serialization;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Filters;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using UserApiTestTask.Api.Filters;
+using UserApiTestTask.Api.JsonConverters;
 using UserApiTestTask.Api.Services;
 using UserApiTestTask.Application;
 using UserApiTestTask.Application.Common.Interfaces;
@@ -27,11 +27,8 @@ public static class ServicesConfigurator
 				opt.Filters.Add<VoidAndTaskTo204NoContentFilter>();
 				opt.SuppressAsyncSuffixInActionNames = false;
 			})
-			.AddJsonOptions(opt =>
-			{
-				opt.JsonSerializerOptions.Converters
-					.Add(new JsonStringEnumConverter(allowIntegerValues: false));
-			});
+			.AddJsonOptions(opt => opt.JsonSerializerOptions.Converters
+					.Add(new StrictJsonStringEnumConverter(allowIntegerValues: false)));
 
 		builder.Services
 			.AddEndpointsApiExplorer()

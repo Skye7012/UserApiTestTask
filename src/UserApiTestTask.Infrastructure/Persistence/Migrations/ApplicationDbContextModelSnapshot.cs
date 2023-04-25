@@ -22,12 +22,79 @@ namespace UserApiTestTask.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("UserApiTestTask.Domain.Entities.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("Admin")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_on")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<string>("ModifiedBy")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("Admin")
+                        .HasColumnName("modified_by");
+
+                    b.Property<DateTime>("ModifiedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_on")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<string>("RevokedBy")
+                        .HasColumnType("text")
+                        .HasColumnName("revoked_by");
+
+                    b.Property<DateTime?>("RevokedOn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_on");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("token");
+
+                    b.Property<Guid>("UserAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_account_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_refresh_tokens");
+
+                    b.HasIndex("Token")
+                        .IsUnique()
+                        .HasDatabaseName("ix_refresh_tokens_token");
+
+                    b.HasIndex("UserAccountId")
+                        .HasDatabaseName("ix_refresh_tokens_user_account_id");
+
+                    b.ToTable("refresh_tokens", (string)null);
+
+                    b.HasComment("Refresh токен");
+                });
+
             modelBuilder.Entity("UserApiTestTask.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<DateTime?>("BirthDay")
                         .HasColumnType("timestamp with time zone")
@@ -35,12 +102,16 @@ namespace UserApiTestTask.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("CreatedBy")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("text")
+                        .HasDefaultValue("Admin")
                         .HasColumnName("created_by");
 
                     b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_on");
+                        .HasColumnName("created_on")
+                        .HasDefaultValueSql("now()");
 
                     b.Property<int>("Gender")
                         .HasColumnType("integer")
@@ -50,6 +121,69 @@ namespace UserApiTestTask.Infrastructure.Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_admin");
 
+                    b.Property<string>("ModifiedBy")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("Admin")
+                        .HasColumnName("modified_by");
+
+                    b.Property<DateTime>("ModifiedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_on")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<string>("RevokedBy")
+                        .HasColumnType("text")
+                        .HasColumnName("revoked_by");
+
+                    b.Property<DateTime?>("RevokedOn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_on");
+
+                    b.Property<Guid>("UserAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_account_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_users");
+
+                    b.HasIndex("UserAccountId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_user_account_id");
+
+                    b.ToTable("users", (string)null);
+
+                    b.HasComment("Пользователи");
+                });
+
+            modelBuilder.Entity("UserApiTestTask.Domain.Entities.UserAccount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("Admin")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_on")
+                        .HasDefaultValueSql("now()");
+
                     b.Property<string>("Login")
                         .IsRequired()
                         .HasColumnType("text")
@@ -57,17 +191,16 @@ namespace UserApiTestTask.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("ModifiedBy")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("text")
+                        .HasDefaultValue("Admin")
                         .HasColumnName("modified_by");
 
                     b.Property<DateTime>("ModifiedOn")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("modified_on");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("name");
+                        .HasColumnName("modified_on")
+                        .HasDefaultValueSql("now()");
 
                     b.Property<byte[]>("PasswordHash")
                         .IsRequired()
@@ -88,15 +221,46 @@ namespace UserApiTestTask.Infrastructure.Persistence.Migrations
                         .HasColumnName("revoked_on");
 
                     b.HasKey("Id")
-                        .HasName("pk_users");
+                        .HasName("pk_user_accounts");
 
                     b.HasIndex("Login")
                         .IsUnique()
-                        .HasDatabaseName("ix_users_login");
+                        .HasDatabaseName("ix_user_accounts_login");
 
-                    b.ToTable("users", (string)null);
+                    b.ToTable("user_accounts", (string)null);
 
-                    b.HasComment("Пользователи");
+                    b.HasComment("Аккаунт пользователя");
+                });
+
+            modelBuilder.Entity("UserApiTestTask.Domain.Entities.RefreshToken", b =>
+                {
+                    b.HasOne("UserApiTestTask.Domain.Entities.UserAccount", "UserAccount")
+                        .WithMany("RefreshTokens")
+                        .HasForeignKey("UserAccountId")
+                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_refresh_tokens_user_accounts_user_account_id");
+
+                    b.Navigation("UserAccount");
+                });
+
+            modelBuilder.Entity("UserApiTestTask.Domain.Entities.User", b =>
+                {
+                    b.HasOne("UserApiTestTask.Domain.Entities.UserAccount", "UserAccount")
+                        .WithOne("User")
+                        .HasForeignKey("UserApiTestTask.Domain.Entities.User", "UserAccountId")
+                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_users_user_accounts_user_account_id");
+
+                    b.Navigation("UserAccount");
+                });
+
+            modelBuilder.Entity("UserApiTestTask.Domain.Entities.UserAccount", b =>
+                {
+                    b.Navigation("RefreshTokens");
+
+                    b.Navigation("User");
                 });
 #pragma warning restore 612, 618
         }

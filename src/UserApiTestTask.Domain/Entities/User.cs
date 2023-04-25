@@ -11,16 +11,6 @@ namespace UserApiTestTask.Domain.Entities;
 public class User : EntityBase, ISoftDeletable
 {
 	/// <summary>
-	/// Поля для <see cref="Gender"/>
-	/// </summary>
-	private Gender _gender;
-
-	/// <summary>
-	/// Поля для <see cref="Login"/>
-	/// </summary>
-	private string _login = default!;
-
-	/// <summary>
 	/// Поля для <see cref="Name"/>
 	/// </summary>
 	private string _name = default!;
@@ -28,63 +18,29 @@ public class User : EntityBase, ISoftDeletable
 	/// <summary>
 	/// Конструктор
 	/// </summary>
-	/// <param name="login">Логин</param>
-	/// <param name="passwordHash">Хэш пароля</param>
-	/// <param name="passwordSalt">Соль пароля</param>
 	/// <param name="name">Имя</param>
 	/// <param name="gender">Пол</param>
 	/// <param name="birthDay">Дата рождения</param>
 	/// <param name="isAdmin">Является ли пользователь администратором</param>
+	/// <param name="userAccount">Аккаунт пользователя</param>
 	public User(
-		string login,
-		byte[] passwordHash,
-		byte[] passwordSalt,
 		string name,
 		Gender gender,
 		DateTime? birthDay,
-		bool isAdmin)
+		bool isAdmin,
+		UserAccount userAccount)
 	{
-		Login = login;
-		PasswordHash = passwordHash;
-		PasswordSalt = passwordSalt;
 		Name = name;
 		Gender = gender;
 		BirthDay = birthDay;
 		IsAdmin = isAdmin;
+		UserAccount = userAccount;
 	}
 
 	/// <summary>
 	/// Конструктор
 	/// </summary>
 	public User() { }
-
-	/// <summary>
-	/// Логин
-	/// </summary>
-	public string Login
-	{
-		get => _login;
-		set
-		{
-			if (string.IsNullOrWhiteSpace(value))
-				throw new ValidationProblem($"Поле {nameof(Login)} не может быть пустым");
-
-			if (!Regex.IsMatch(value, @"^[a-zA-Z0-9]+$"))
-				throw new ValidationProblem("Для логина запрещены все символы кроме латинских букв и цифр");
-
-			_login = value;
-		}
-	}
-
-	/// <summary>
-	/// Хэш пароля
-	/// </summary>
-	public byte[] PasswordHash { get; set; } = default!;
-
-	/// <summary>
-	/// Соль пароля
-	/// </summary>
-	public byte[] PasswordSalt { get; set; } = default!;
 
 	/// <summary>
 	/// Имя
@@ -107,17 +63,7 @@ public class User : EntityBase, ISoftDeletable
 	/// <summary>
 	/// Пол
 	/// </summary>
-	public Gender Gender
-	{
-		get => _gender;
-		set
-		{
-			if (!Enum.IsDefined(typeof(Gender), value))
-				throw new ValidationProblem($"{value} не входит в перечисление {nameof(Gender)}");
-
-			_gender = value;
-		}
-	}
+	public Gender Gender { get; set; }
 
 	/// <summary>
 	/// Дата рождения
@@ -134,4 +80,18 @@ public class User : EntityBase, ISoftDeletable
 
 	/// <inheritdoc/>
 	public string? RevokedBy { get; set; }
+
+	/// <summary>
+	/// Идентификатор Аккаунта пользователя
+	/// </summary>
+	public Guid UserAccountId { get; set; }
+
+	#region navigation Properties
+
+	/// <summary>
+	/// Аккаунт пользователя
+	/// </summary>
+	public UserAccount? UserAccount { get; set; }
+
+	#endregion
 }

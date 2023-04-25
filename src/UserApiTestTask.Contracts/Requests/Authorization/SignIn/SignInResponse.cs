@@ -6,7 +6,12 @@ namespace UserApiTestTask.Contracts.Requests.Authorization.SignIn;
 public class SignInResponse
 {
 	/// <summary>
-	/// Токен авторизации
+	/// Access Токен
 	/// </summary>
-	public string Token { get; set; } = default!;
+	public string AccessToken { get; set; } = default!;
+
+	/// <summary>
+	/// Refresh Токен
+	/// </summary>
+	public string RefreshToken { get; set; } = default!;
 }

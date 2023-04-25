@@ -21,8 +21,18 @@ public class EntityNotFoundProblem<TEntity> : ApplicationProblem
 	/// <summary>
 	/// Конструктор
 	/// </summary>
+	/// <param name="field">Поле</param>
+	/// <param name="value">Значение</param>
+	public EntityNotFoundProblem(string field, string value)
+		: base($"Не удалось найти сущность '{typeof(TEntity).Name}' " +
+			$"по полю '{field}', которое = '{value}'")
+	{ }
+
+	/// <summary>
+	/// Конструктор
+	/// </summary>
 	/// <param name="id">Идентификатор</param>
-	public EntityNotFoundProblem(int id)
+	public EntityNotFoundProblem(Guid id)
 		: base($"Не удалось найти сущность '{typeof(TEntity).Name}' по id = '{id}'")
 	{ }
 

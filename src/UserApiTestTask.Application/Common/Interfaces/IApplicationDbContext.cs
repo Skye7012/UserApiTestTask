@@ -14,14 +14,14 @@ public interface IApplicationDbContext : IDbContext
 	DbSet<User> Users { get; }
 
 	/// <summary>
-	/// Сохранить изменения
+	/// Аккаунты пользователей
 	/// </summary>
-	/// <param name="withSoftDelete">Использовать мягкое удаление</param>
-	/// <param name="acceptAllChangesOnSuccess"></param>
-	/// <returns>Количество записей состояния, записанных в базу данных</returns>
-	int SaveChanges(
-		bool withSoftDelete = true,
-		bool acceptAllChangesOnSuccess = true);
+	DbSet<UserAccount> UserAccounts { get; }
+
+	/// <summary>
+	/// Refresh токены
+	/// </summary>
+	DbSet<RefreshToken> RefreshTokens { get; }
 
 	/// <summary>
 	/// Сохранить изменения

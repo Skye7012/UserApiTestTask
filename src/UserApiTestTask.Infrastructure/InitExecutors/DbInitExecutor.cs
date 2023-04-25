@@ -16,10 +16,15 @@ namespace UserApiTestTask.Infrastructure.InitExecutors;
 /// </summary>
 public class DbInitExecutor : IAsyncInitActionExecutor
 {
+	/// <summary>
+	/// Логин пользователя-администратора, который создается автоматически
+	/// </summary>
+	public const string AdminLogin = "Admin";
+
 	private readonly IServiceScopeFactory _scopeFactory;
 	private readonly IWebHostEnvironment _environment;
 	private readonly IConfiguration _configuration;
-	private readonly IUserService _userService;
+	private readonly IPasswordService _passwordService;
 
 	/// <summary>
 	/// Конструктор
@@ -27,17 +32,17 @@ public class DbInitExecutor : IAsyncInitActionExecutor
 	/// <param name="scopeFactory">Фабрика скоупов</param>
 	/// <param name="environment">Переменные среды</param>
 	/// <param name="configuration">Конфигурация приложения</param>
-	/// <param name="userService">Сервис пользователя</param>
+	/// <param name="passwordService">Сервис паролей</param>
 	public DbInitExecutor(
 		IServiceScopeFactory scopeFactory,
 		IWebHostEnvironment environment,
 		IConfiguration configuration,
-		IUserService userService)
+		IPasswordService passwordService)
 	{
 		_scopeFactory = scopeFactory;
 		_environment = environment;
 		_configuration = configuration;
-		_userService = userService;
+		_passwordService = passwordService;
 	}
 
 	/// <summary>
@@ -59,28 +64,32 @@ public class DbInitExecutor : IAsyncInitActionExecutor
 
 
 
-		var isAdminExists = await db.Users.AnyAsync(u => u.Login == "Admin", cancellationToken);
+		var isAdminExists = await db.UserAccounts
+			.AnyAsync(u => u.Login == AdminLogin, cancellationToken);
 
 		if (!isAdminExists)
 		{
-			_userService.CreatePasswordHash(
+			_passwordService.CreatePasswordHash(
 				_configuration["AppSettings:AdminPassword"],
 				out var passwordHash,
 				out var passwordSalt);
 
 			await db.Users.AddAsync(new User
 			{
-				Login = "Admin",
 				Name = "Admin",
 				BirthDay = GetDate(2000),
 				Gender = Gender.Male,
 				IsAdmin = true,
-				PasswordHash = passwordHash,
-				PasswordSalt = passwordSalt,
 				CreatedBy = "Admin",
 				CreatedOn = GetDate(2020),
 				ModifiedBy = "Admin",
 				ModifiedOn = GetDate(2020),
+				UserAccount = new UserAccount
+				{
+					Login = AdminLogin,
+					PasswordHash = passwordHash,
+					PasswordSalt = passwordSalt,
+				}
 			},
 			cancellationToken);
 
@@ -92,7 +101,7 @@ public class DbInitExecutor : IAsyncInitActionExecutor
 	/// Получить дату
 	/// </summary>
 	/// <param name="year">Год</param>
-	private static DateTime GetDate(int year)
+	public static DateTime GetDate(int year)
 		=> DateTime.SpecifyKind(
 			new DateTime(year, 01, 01),
 			DateTimeKind.Utc);

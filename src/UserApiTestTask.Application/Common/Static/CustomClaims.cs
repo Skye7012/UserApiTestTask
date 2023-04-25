@@ -6,6 +6,16 @@ namespace UserApiTestTask.Application.Common.Static;
 public class CustomClaims
 {
 	/// <summary>
+	/// Наименование клейма "Идентификатор пользователя"
+	/// </summary>
+	public const string UserIdСlaimName = "userId";
+
+	/// <summary>
+	/// Наименование клейма "Идентификатор аккаунта пользователя"
+	/// </summary>
+	public const string UserAccountIdClaimName = "userAccountId";
+
+	/// <summary>
 	/// Наименование клейма "Является ли пользователь администратором"
 	/// </summary>
 	public const string IsAdminClaimName = "isAdmin";

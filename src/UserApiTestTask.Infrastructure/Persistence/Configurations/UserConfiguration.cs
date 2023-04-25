@@ -15,22 +15,18 @@ public class UserConfiguration : EntityBaseConfiguration<User>
 	{
 		builder.HasComment("Пользователи");
 
-		builder.Property(e => e.Login);
-		builder.Property(e => e.PasswordHash);
-		builder.Property(e => e.PasswordSalt);
 		builder.Property(e => e.Name);
 		builder.Property(e => e.Gender);
 		builder.Property(e => e.BirthDay);
 		builder.Property(e => e.IsAdmin);
 
-		builder.Property(e => e.CreatedBy);
-		builder.Property(e => e.CreatedOn);
-		builder.Property(e => e.ModifiedBy);
-		builder.Property(e => e.ModifiedOn);
 		builder.Property(e => e.RevokedBy);
 		builder.Property(e => e.RevokedOn);
 
-		builder.HasIndex(e => e.Login)
-			.IsUnique();
+		builder.HasOne(e => e.UserAccount)
+			.WithOne(e => e.User)
+			.HasForeignKey<User>(e => e.UserAccountId)
+			.HasPrincipalKey<UserAccount>(e => e.Id)
+			.OnDelete(DeleteBehavior.ClientCascade);
 	}
 }
