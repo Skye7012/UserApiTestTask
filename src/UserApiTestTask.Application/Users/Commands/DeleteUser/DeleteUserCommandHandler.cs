@@ -22,11 +22,13 @@ public class DeleteUserCommandHandler : IRequestHandler<DeleteUserCommand>
 	/// <inheritdoc/>
 	public async Task Handle(DeleteUserCommand request, CancellationToken cancellationToken)
 	{
-		var user = await _context.Users
+		var userAccount = await _context.UserAccounts
+			.Include(x => x.User)
+			.Include(x => x.RefreshTokens)
 			.FirstOrDefaultAsync(x => x.Login == request.Login, cancellationToken)
 			?? throw new UserNotFoundProblem(request.Login);
 
-		_context.Users.Remove(user);
+		_context.UserAccounts.Remove(userAccount);
 		await _context.SaveChangesAsync(request.WithSoftDelete, true, cancellationToken);
 	}
 }

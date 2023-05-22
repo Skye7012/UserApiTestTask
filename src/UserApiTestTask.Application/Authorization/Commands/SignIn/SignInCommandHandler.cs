@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using UserApiTestTask.Application.Common.Exceptions;
 using UserApiTestTask.Application.Common.Interfaces;
 using UserApiTestTask.Contracts.Requests.Authorization.SignIn;
+using UserApiTestTask.Domain.Entities;
 using UserApiTestTask.Domain.Exceptions;
 
 namespace UserApiTestTask.Application.Authorization.Commands.SignIn;
@@ -13,36 +14,51 @@ namespace UserApiTestTask.Application.Authorization.Commands.SignIn;
 public class SignInCommandHandler : IRequestHandler<SignInCommand, SignInResponse>
 {
 	private readonly IApplicationDbContext _context;
-	private readonly IUserService _userService;
+	private readonly ITokenService _tokenService;
+	private readonly IPasswordService _passwordService;
 
 	/// <summary>
 	/// Конструктор
 	/// </summary>
 	/// <param name="context">Контекст БД</param>
-	/// <param name="userService">Сервис пользователя</param>
-	public SignInCommandHandler(IApplicationDbContext context, IUserService userService)
+	/// <param name="tokenService">Сервис JWT токенов</param>
+	/// <param name="passwordService">Сервис паролей</param>
+	public SignInCommandHandler(
+		IApplicationDbContext context,
+		ITokenService tokenService,
+		IPasswordService passwordService)
 	{
 		_context = context;
-		_userService = userService;
+		_tokenService = tokenService;
+		_passwordService = passwordService;
 	}
 
 	/// <inheritdoc/>
 	public async Task<SignInResponse> Handle(SignInCommand request, CancellationToken cancellationToken)
 	{
-		var user = await _context.Users
+		var userAccount = await _context.UserAccounts
+			.Include(x => x.User)
+			.Include(x => x.RefreshTokens)
 			.FirstOrDefaultAsync(x => x.Login == request.Login, cancellationToken)
 			?? throw new UserNotFoundProblem(request.Login);
 
-		if (!_userService.VerifyPasswordHash(request.Password, user.PasswordHash, user.PasswordSalt))
+		if (userAccount.RevokedOn != null)
+			throw new ValidationProblem("Данные учетные данные были деактивированы");
+
+		if (!_passwordService.VerifyPasswordHash(request.Password, userAccount.PasswordHash, userAccount.PasswordSalt))
 		{
 			throw new ValidationProblem("Неправильный пароль");
 		}
 
-		string token = _userService.CreateToken(user);
+		string refreshToken = _tokenService.CreateRefreshToken();
+		userAccount.AddRefreshToken(new RefreshToken(refreshToken, userAccount));
+
+		await _context.SaveChangesAsync(cancellationToken);
 
 		return new SignInResponse()
 		{
-			Token = token,
+			AccessToken = _tokenService.CreateAccessToken(userAccount),
+			RefreshToken = refreshToken,
 		};
 	}
 }

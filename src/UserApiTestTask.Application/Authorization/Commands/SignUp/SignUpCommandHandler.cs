@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using UserApiTestTask.Application.Common.Interfaces;
 using UserApiTestTask.Contracts.Requests.Authorization.SignUp;
 using UserApiTestTask.Domain.Entities;
@@ -13,39 +14,44 @@ namespace UserApiTestTask.Application.Authorization.Commands.SignUp;
 public class SignUpCommandHandler : IRequestHandler<SignUpCommand, SignUpResponse>
 {
 	private readonly IApplicationDbContext _context;
-	private readonly IUserService _userService;
+	private readonly IPasswordService _passwordService;
 
 	/// <summary>
 	/// Конструктор
 	/// </summary>
 	/// <param name="context">Контекст БД</param>
-	/// <param name="userService">Сервис пользователя</param>
-	public SignUpCommandHandler(IApplicationDbContext context, IUserService userService)
+	/// <param name="passwordService">Сервис паролей</param>
+	public SignUpCommandHandler(
+		IApplicationDbContext context,
+		IPasswordService passwordService)
 	{
 		_context = context;
-		_userService = userService;
+		_passwordService = passwordService;
 	}
 
 	/// <inheritdoc/>
 	public async Task<SignUpResponse> Handle(SignUpCommand request, CancellationToken cancellationToken)
 	{
-		var isLoginUnique = _context.Users.All(x => x.Login != request.Login);
+		var isLoginUnique = await _context.Users
+			.AllAsync(x => x.UserAccount!.Login != request.Login, cancellationToken);
+
 		if (!isLoginUnique)
 			throw new ValidationProblem("Пользователь с таким логином уже существует");
 
 		if (!Regex.IsMatch(request.Password, @"^[a-zA-Z0-9]+$"))
 			throw new ValidationProblem("Для пароля запрещены все символы кроме латинских букв и цифр");
 
-		_userService.CreatePasswordHash(request.Password, out byte[] passwordHash, out byte[] passwordSalt);
+		_passwordService.CreatePasswordHash(request.Password, out byte[] passwordHash, out byte[] passwordSalt);
 
 		var user = new User(
-			login: request.Login,
-			passwordHash: passwordHash,
-			passwordSalt: passwordSalt,
 			name: request.Name,
 			gender: request.Gender,
 			birthDay: request.BirthDay,
-			isAdmin: request.IsAdmin);
+			isAdmin: request.IsAdmin,
+			userAccount: new UserAccount(
+				login: request.Login,
+				passwordHash: passwordHash,
+				passwordSalt: passwordSalt));
 
 		await _context.Users.AddAsync(user, cancellationToken);
 		await _context.SaveChangesAsync(cancellationToken);

@@ -11,8 +11,9 @@ public class ForbiddenProblem : ApplicationProblem
 	/// <summary>
 	/// Конструктор
 	/// </summary>
-	public ForbiddenProblem()
-		: base("У пользователя нет прав на выполнение данной операции")
+	/// <param name="message">Сообщение</param>
+	public ForbiddenProblem(string? message = null)
+		: base(message ?? "У пользователя нет прав на выполнение данного действия")
 	{ }
 
 	/// <inheritdoc/>

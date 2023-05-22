@@ -11,31 +11,34 @@ namespace UserApiTestTask.Application.Users.Commands.PutUser;
 public class PutUserCommandHandler : IRequestHandler<PutUserCommand>
 {
 	private readonly IApplicationDbContext _context;
-	private readonly IUserService _userService;
+	private readonly IAuthorizationService _authorizationService;
 
 	/// <summary>
 	/// Конструктор
 	/// </summary>
 	/// <param name="context">Контекст БД</param>
-	/// <param name="userService">Сервис пользователя</param>
-	public PutUserCommandHandler(IApplicationDbContext context, IUserService userService)
+	/// <param name="authorizationService">Сервис авторизации</param>
+	public PutUserCommandHandler(
+		IApplicationDbContext context,
+		IAuthorizationService authorizationService)
 	{
 		_context = context;
-		_userService = userService;
+		_authorizationService = authorizationService;
 	}
 
 	/// <inheritdoc/>
 	public async Task Handle(PutUserCommand request, CancellationToken cancellationToken)
 	{
-		var user = await _context.Users
+		var userAccount = await _context.UserAccounts
+			.Include(x => x.User)
 			.FirstOrDefaultAsync(x => x.Login == request.Login, cancellationToken)
 			?? throw new UserNotFoundProblem(request.Login);
 
-		_userService.CheckUserPermissionRule(user);
+		_authorizationService.CheckUserPermissionRule(userAccount);
 
-		user.Name = request.Name;
-		user.Gender = request.Gender;
-		user.BirthDay = request.BirthDay;
+		userAccount.User!.Name = request.Name;
+		userAccount.User!.Gender = request.Gender;
+		userAccount.User!.BirthDay = request.BirthDay;
 
 		await _context.SaveChangesAsync(cancellationToken);
 	}

@@ -1,11 +1,14 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using UserApiTestTask.Application.Common.Static;
+using UserApiTestTask.Api.AuthorizationAttributes;
 using UserApiTestTask.Application.Users.Commands.DeleteUser;
 using UserApiTestTask.Application.Users.Commands.PutUser;
+using UserApiTestTask.Application.Users.Queries.GetActiveUsers;
+using UserApiTestTask.Application.Users.Queries.GetOlderThanGivenAgeUsers;
 using UserApiTestTask.Application.Users.Queries.GetUser;
 using UserApiTestTask.Contracts.Requests.Users.GetUser;
+using UserApiTestTask.Contracts.Requests.Users.GetUsers;
 using UserApiTestTask.Contracts.Requests.Users.PutUser;
 
 namespace UserApiTestTask.Api.Controllers;
@@ -29,6 +32,7 @@ public class UserController : ControllerBase
 	/// <summary>
 	/// Получить данные о пользователе
 	/// </summary>
+	/// <remarks>Доступно только администратору, либо лично пользователю, если он активен</remarks>
 	/// <param name="login">Логин</param>
 	/// <param name="cancellationToken">Токен отмены</param>
 	/// <returns>Данные о пользователе</returns>
@@ -42,8 +46,38 @@ public class UserController : ControllerBase
 			=> await _mediator.Send(new GetUserQuery(login), cancellationToken);
 
 	/// <summary>
+	/// Получить активных пользователей
+	/// </summary>
+	/// <remarks>Доступно только администратору</remarks>
+	/// <param name="cancellationToken">Токен отмены</param>
+	/// <returns>Активных пользователей</returns>
+	[HttpGet("ActiveUsers")]
+	[Authorize]
+	[AdminAuthorization]
+	[ProducesResponseType(StatusCodes.Status200OK)]
+	public async Task<GetUsersResponse> GetActiveUsersAsync(CancellationToken cancellationToken = default)
+			=> await _mediator.Send(new GetActiveUsersQuery(), cancellationToken);
+
+	/// <summary>
+	/// Получить пользователей старше заданного возраста
+	/// </summary>
+	/// <remarks>Доступно только администратору</remarks>
+	/// <param name="age">Возраст, старше которого должны быть пользователи</param>
+	/// <param name="cancellationToken">Токен отмены</param>
+	/// <returns>Пользователей старше заданного возраста</returns>
+	[HttpGet("UsersOlderThan/{age}")]
+	[Authorize]
+	[AdminAuthorization]
+	[ProducesResponseType(StatusCodes.Status200OK)]
+	public async Task<GetUsersResponse> GetActiveUsersAsync(
+		[FromRoute] int age,
+		CancellationToken cancellationToken = default)
+			=> await _mediator.Send(new GetOlderThanGivenAgeUsersQuery(age), cancellationToken);
+
+	/// <summary>
 	/// Обновить данные о пользователе
 	/// </summary>
+	/// <remarks>Доступно только администратору, либо лично пользователю, если он активен</remarks>
 	/// <param name="login">Логин</param>
 	/// <param name="request">Запрос</param>
 	/// <param name="cancellationToken">Токен отмены</param>
@@ -67,11 +101,13 @@ public class UserController : ControllerBase
 	/// <summary>
 	/// Удалить пользователя
 	/// </summary>
+	/// <remarks>Доступно только администратору</remarks>
 	/// <param name="login">Логин</param>
 	/// <param name="withSoftDelete">>Использовать мягкое удаление</param>
 	/// <param name="cancellationToken">Токен отмены</param>
 	[HttpDelete("{login}")]
-	[Authorize(Policy = CustomPolicies.IsAdminClaimPolicy)]
+	[Authorize]
+	[AdminAuthorization]
 	[ProducesResponseType(StatusCodes.Status204NoContent)]
 	[ProducesResponseType(StatusCodes.Status404NotFound)]
 	public async Task DeleteAsync(
