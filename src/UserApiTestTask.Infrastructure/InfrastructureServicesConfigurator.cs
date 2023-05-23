@@ -5,10 +5,12 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using UserApiTestTask.Application.Common.Extensions;
 using UserApiTestTask.Application.Common.Interfaces;
+using UserApiTestTask.Application.Common.Interfaces.CacheRepositories;
 using UserApiTestTask.Infrastructure.Configs;
 using UserApiTestTask.Infrastructure.InitExecutors;
 using UserApiTestTask.Infrastructure.Persistence;
 using UserApiTestTask.Infrastructure.Services;
+using UserApiTestTask.Infrastructure.Services.CacheRepositories;
 
 namespace UserApiTestTask.Infrastructure;
 
@@ -86,7 +88,8 @@ public static class InfrastructureServicesConfigurator
 	private static IServiceCollection AddRedis(this IServiceCollection services, IConfiguration configuration)
 	{
 		var connString = configuration.GetConnectionString("Redis")!;
-		return services.AddStackExchangeRedisCache(opt => opt.Configuration = connString);
+		return services.AddStackExchangeRedisCache(opt => opt.Configuration = connString)
+			.AddTransient<IUserAccountCacheRepository, UserAccountCacheRepository>();
 	}
 
 	/// <summary>

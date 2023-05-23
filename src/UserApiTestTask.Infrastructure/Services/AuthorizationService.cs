@@ -43,7 +43,7 @@ public class AuthorizationService : IAuthorizationService
 			return;
 
 		if (userAccount.Id != GetUserAccountId() || userAccount.RevokedOn != null)
-			throw new ForbiddenProblem("Данное действие доступно только для самого пользователя, " +
-				"если он активен. Или для администратора");
+			throw new ForbiddenProblem("Данное действие доступно администратору, " +
+				"либо лично пользователю, если он активен");
 	}
 }

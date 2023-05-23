@@ -1,9 +1,8 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Distributed;
 using UserApiTestTask.Application.Common.Exceptions;
 using UserApiTestTask.Application.Common.Interfaces;
-using UserApiTestTask.Application.Common.Static;
+using UserApiTestTask.Application.Common.Interfaces.CacheRepositories;
 using UserApiTestTask.Contracts.Requests.Authorization.PutUserLogin;
 using UserApiTestTask.Domain.Entities;
 using UserApiTestTask.Domain.Exceptions;
@@ -18,7 +17,7 @@ public class PutUserLoginCommandHandler : IRequestHandler<PutUserLoginCommand, P
 	private readonly IApplicationDbContext _context;
 	private readonly IAuthorizationService _authorizationService;
 	private readonly ITokenService _tokenService;
-	private readonly IDistributedCache _cache;
+	private readonly IUserAccountCacheRepository _userAccountCache;
 
 	/// <summary>
 	/// Конструктор
@@ -26,17 +25,17 @@ public class PutUserLoginCommandHandler : IRequestHandler<PutUserLoginCommand, P
 	/// <param name="context">Контекст БД</param>
 	/// <param name="authorizationService">Сервис авторизации</param>
 	/// <param name="tokenService">Сервис JWT токенов</param>
-	/// <param name="cache">Сервис кэширования</param>
+	/// <param name="userAccountCache">Репозиторий кэширования аккаунта пользователя</param>
 	public PutUserLoginCommandHandler(
 		IApplicationDbContext context,
 		IAuthorizationService authorizationService,
 		ITokenService tokenService,
-		IDistributedCache cache)
+		IUserAccountCacheRepository userAccountCache)
 	{
 		_context = context;
 		_authorizationService = authorizationService;
 		_tokenService = tokenService;
-		_cache = cache;
+		_userAccountCache = userAccountCache;
 	}
 
 	/// <inheritdoc/>
@@ -59,8 +58,8 @@ public class PutUserLoginCommandHandler : IRequestHandler<PutUserLoginCommand, P
 
 		userAccount.Login = request.NewLogin;
 
-		await _cache.SetStringAsync(
-			RedisKeys.GetUserAccountLoginKey(userAccount.Id),
+		await _userAccountCache.SetLoginAsync(
+			userAccount.Id,
 			request.NewLogin,
 			cancellationToken);
 
