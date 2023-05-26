@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Distributed;
 using UserApiTestTask.Application.Common.Exceptions;
 using UserApiTestTask.Application.Common.Interfaces;
-using UserApiTestTask.Application.Common.Static;
+using UserApiTestTask.Application.Common.Interfaces.CacheRepositories;
 using UserApiTestTask.Domain.Entities;
 using UserApiTestTask.Domain.Entities.Common;
+using UserApiTestTask.Domain.Exceptions;
+using UserApiTestTask.Infrastructure.InitExecutors;
 
 namespace UserApiTestTask.Infrastructure.Persistence;
 
@@ -15,7 +16,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 {
 	private readonly IAuthorizationService _authorizationService;
 	private readonly IDateTimeProvider _dateTimeProvider;
-	private readonly IDistributedCache _cache;
+	private readonly IUserAccountCacheRepository _userAccountCache;
 
 	/// <summary>
 	/// Конструктор
@@ -23,40 +24,42 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 	/// <param name="options">Опции контекста</param>
 	/// <param name="authorizationService">Сервис авторизации</param>
 	/// <param name="dateTimeProvider">Провайдер даты и времени</param>
-	/// <param name="cache">Сервис кэширования</param>
+	/// <param name="userAccountCache">Репозиторий кэширования аккаунта пользователя</param>
 	public ApplicationDbContext(
 		DbContextOptions<ApplicationDbContext> options,
 		IAuthorizationService authorizationService,
 		IDateTimeProvider dateTimeProvider,
-		IDistributedCache cache)
+		IUserAccountCacheRepository userAccountCache)
 		: base(options)
 	{
 		_authorizationService = authorizationService;
 		_dateTimeProvider = dateTimeProvider;
-		_cache = cache;
+		_userAccountCache = userAccountCache;
 	}
 
 	/// <inheritdoc/>
 	public DbContext Instance => this;
 
-	/// <summary>
-	/// Пользователи
-	/// </summary>
+	/// <inheritdoc/>
 	public DbSet<User> Users { get; private set; } = default!;
 
-	/// <summary>
-	/// Аккаунты пользователей
-	/// </summary>
+	/// <inheritdoc/>
 	public DbSet<UserAccount> UserAccounts { get; private set; } = default!;
 
-	/// <summary>
-	/// Refresh токены
-	/// </summary>
+	/// <inheritdoc/>
 	public DbSet<RefreshToken> RefreshTokens { get; private set; } = default!;
 
 	/// <inheritdoc/>
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
 		=> modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+
+	/// <inheritdoc/>
+	public override int SaveChanges()
+		=> throw new NotImplementedException("Используй асинхронные методы");
+
+	/// <inheritdoc/>
+	public override int SaveChanges(bool acceptAllChangesOnSuccess)
+		=> throw new NotImplementedException("Используй асинхронные методы");
 
 	/// <inheritdoc/>
 	public async Task<int> SaveChangesAsync(
@@ -69,11 +72,11 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 		return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
 	}
 
-	/// <summary>
-	/// Сохранить изменения
-	/// </summary>
-	/// <param name="cancellationToken">Токен отмены</param>
-	/// <returns>Количество записей состояния, записанных в базу данных</returns>
+	/// <inheritdoc/>
+	public async Task<int> SaveChangesAsync()
+		=> await SaveChangesAsync((CancellationToken)default);
+
+	/// <inheritdoc/>
 	public async override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
 	{
 		await HandleSaveChangesLogicAsync(true, cancellationToken);
@@ -81,26 +84,18 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 		return await base.SaveChangesAsync(cancellationToken);
 	}
 
-	/// <summary>
-	/// Обработать логику сохранения изменений
-	/// </summary>
-	/// <param name="withSoftDelete">Использовать мягкое удаление</param>
-	/// <param name="cancellationToken">Токен отмены</param>
+	/// <inheritdoc/>
 	private async Task HandleSaveChangesLogicAsync(bool withSoftDelete, CancellationToken cancellationToken)
 	{
-		if (!_authorizationService.IsAuthenticated())
-		{
-			HandleRefreshTokenAddingAndRemovingWhenSignIn();
-			return;
-		}
-
 		var willLoginBeNeeded = ChangeTracker.Entries<EntityBase>()?.Any() == true
 			|| ChangeTracker.Entries<ISoftDeletable>()?.Any() == true;
 
 		if (!willLoginBeNeeded)
 			return;
 
-		var login = await GetCachedLoginAsync(cancellationToken);
+		var login = _authorizationService.IsAuthenticated()
+			? await GetCachedLoginAsync(cancellationToken)
+			: GetLoginWhenUnauthorized();
 
 		HandleEntityBaseCreatedAndModifiedMetadata(login);
 
@@ -111,40 +106,23 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 	}
 
 	/// <summary>
-	/// Обработать refresh токены при аутентификации
-	/// (их добавлении и удалении при привышении лимита)
+	/// Получить логин в случае, когда пользователь не авторизован
 	/// </summary>
-	private void HandleRefreshTokenAddingAndRemovingWhenSignIn()
+	/// <returns>Логин</returns>
+	private string GetLoginWhenUnauthorized()
 	{
 		var refreshTokens = ChangeTracker.Entries<RefreshToken>();
 
-		if (refreshTokens?.Any() == true)
-		{
-			var refreshTokenToAdd = refreshTokens
-				.Where(c => c.State == EntityState.Added)
-				.SingleOrDefault();
+		if (!refreshTokens.Any())
+			return DbInitExecutor.AdminLogin;
 
-			if (refreshTokenToAdd is null)
-				return;
+		var login = refreshTokens.First().Entity.UserAccount!.Login;
 
-			var login = refreshTokenToAdd.Entity.UserAccount!.Login;
+		var isLoginSame = refreshTokens.All(x => x.Entity.UserAccount!.Login == login);
 
-			refreshTokenToAdd.Entity.CreatedOn = _dateTimeProvider.UtcNow;
-			refreshTokenToAdd.Entity.CreatedBy = login;
-			refreshTokenToAdd.Entity.ModifiedOn = _dateTimeProvider.UtcNow;
-			refreshTokenToAdd.Entity.ModifiedBy = login;
-
-			var refreshTokenToRemove = refreshTokens
-				.Where(c => c.State == EntityState.Deleted)
-				.SingleOrDefault();
-
-			if (refreshTokenToRemove is not null)
-			{
-				refreshTokenToRemove.Entity.RevokedOn = _dateTimeProvider.UtcNow;
-				refreshTokenToRemove.Entity.RevokedBy = login;
-				refreshTokenToRemove.State = EntityState.Modified;
-			}
-		}
+		return !isLoginSame
+			? throw new ApplicationProblem("Не удается получить валидный логин")
+			: login;
 	}
 
 	/// <summary>
@@ -154,8 +132,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 	/// <returns>Закешированный логин</returns>
 	private async Task<string> GetCachedLoginAsync(CancellationToken cancellationToken)
 	{
-		var login = await _cache.GetStringAsync(
-			RedisKeys.GetUserAccountLoginKey(_authorizationService.GetUserAccountId()),
+		var login = await _userAccountCache.GetLoginAsync(
+			_authorizationService.GetUserAccountId(),
 			cancellationToken);
 
 		if (login == null)
@@ -163,10 +141,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 			login = (await UserAccounts
 				.FirstOrDefaultAsync(x => _authorizationService.GetUserAccountId() == x.Id, cancellationToken))
 					?.Login
-				?? throw new EntityNotFoundProblem<UserAccount>(_authorizationService.GetUserId());
+				?? throw new EntityNotFoundProblem<UserAccount>(_authorizationService.GetUserAccountId());
 
-			await _cache.SetStringAsync(
-				RedisKeys.GetUserAccountLoginKey(_authorizationService.GetUserAccountId()),
+			await _userAccountCache.SetLoginAsync(
+				_authorizationService.GetUserAccountId(),
 				login,
 				cancellationToken);
 		}

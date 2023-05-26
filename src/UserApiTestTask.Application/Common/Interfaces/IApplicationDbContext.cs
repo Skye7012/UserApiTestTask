@@ -41,4 +41,10 @@ public interface IApplicationDbContext : IDbContext
 	/// <param name="cancellationToken">Токен отмены</param>
 	/// <returns>Количество записей состояния, записанных в базу данных</returns>
 	Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+
+	/// <summary>
+	/// Сохранить изменения
+	/// </summary>
+	/// <returns>Количество записей состояния, записанных в базу данных</returns>
+	Task<int> SaveChangesAsync();
 }

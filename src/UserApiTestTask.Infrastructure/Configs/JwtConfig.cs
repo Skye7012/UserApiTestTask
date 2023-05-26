@@ -6,7 +6,7 @@ namespace UserApiTestTask.Infrastructure.Configs;
 /// <summary>
 /// Конфигурация для JWT
 /// </summary>
-public class JwtConfig
+public record JwtConfig
 {
 	/// <summary>
 	/// Наименование секции в appSettings
