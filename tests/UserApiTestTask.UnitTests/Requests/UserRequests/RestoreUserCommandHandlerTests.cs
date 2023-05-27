@@ -2,8 +2,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using NSubstitute;
 using UserApiTestTask.Application.Common.Exceptions;
 using UserApiTestTask.Application.Users.Commands.RestoreUser;
+using UserApiTestTask.Contracts.Common.Enums;
+using UserApiTestTask.Domain.Entities;
 using Xunit;
 
 namespace UserApiTestTask.UnitTests.Requests.UserRequests;
@@ -19,14 +22,28 @@ public class RestoreUserCommandHandlerTests : UnitTestBase
 	[Fact]
 	public async Task Handle_ShouldRestoreUser_WhenCommandValid()
 	{
-		using var context = await CreateInMemoryContextAsync();
+		var userAccount = new UserAccount
+		{
+			Login = "new",
+			PasswordHash = new byte[] { 1, 2 },
+			PasswordSalt = new byte[] { 3, 4 },
+			User = new User
+			{
+				BirthDay = DateTimeProvider.UtcNow,
+				IsAdmin = false,
+				Name = "newUser",
+				Gender = Gender.Unknown,
+			}
+		};
 
-		context.UserAccounts.Remove(AdminUserAccount);
+		using var context = await CreateInMemoryContextAsync(x => x.UserAccounts.Add(userAccount));
+
+		context.UserAccounts.Remove(userAccount);
 		await context.SaveChangesAsync();
 		context.Instance.ChangeTracker.Clear();
 
-		var command = new RestoreUserCommand(AdminUserAccount.Login);
-		var handler = new RestoreUserCommandHandler(context);
+		var command = new RestoreUserCommand(userAccount.Login);
+		var handler = new RestoreUserCommandHandler(context, AuthorizationService);
 		await handler.Handle(command, default);
 
 		var adminUserAccount = context.UserAccounts
@@ -37,6 +54,10 @@ public class RestoreUserCommandHandlerTests : UnitTestBase
 		adminUserAccount.RevokedBy.Should().BeNull();
 		adminUserAccount.User!.RevokedOn.Should().BeNull();
 		adminUserAccount.User!.RevokedBy.Should().BeNull();
+
+		AuthorizationService
+			.Received(1)
+			.CheckIsAdmin();
 	}
 
 	/// <summary>
@@ -47,12 +68,8 @@ public class RestoreUserCommandHandlerTests : UnitTestBase
 	{
 		using var context = await CreateInMemoryContextAsync();
 
-		context.UserAccounts.Remove(AdminUserAccount);
-		await context.SaveChangesAsync();
-		context.Instance.ChangeTracker.Clear();
-
 		var command = new RestoreUserCommand("NotExistingLogin");
-		var handler = new RestoreUserCommandHandler(context);
+		var handler = new RestoreUserCommandHandler(context, AuthorizationService);
 		var handle = async () => await handler.Handle(command, default);
 
 		await handle.Should()

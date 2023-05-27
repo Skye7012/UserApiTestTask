@@ -44,7 +44,16 @@ public class TokenService : ITokenService
 
 	/// <inheritdoc/>
 	public string CreateRefreshToken()
-		=> CreateToken(DateTime.UtcNow.AddSeconds(_jwtConfig.RefreshTokenLifeTime));
+	{
+		List<Claim> claims = new()
+		{
+			new Claim(CustomClaims.IdСlaimName, Guid.NewGuid().ToString()),
+		};
+
+		return CreateToken(
+			DateTime.UtcNow.AddSeconds(_jwtConfig.RefreshTokenLifeTime),
+			claims);
+	}
 
 	/// <inheritdoc/>
 	public string CreateToken(DateTime expires, IEnumerable<Claim>? claims = null)

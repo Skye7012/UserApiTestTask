@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -67,7 +66,7 @@ public class AuthorizationServiceTests : UnitTestBase
 		sut.GetUserId().Should().Be(AdminUserAccount.User!.Id);
 		sut.GetUserAccountId().Should().Be(AdminUserAccount.Id);
 
-		sut.CheckUserPermissionRule(AdminUserAccount);
+		sut.CheckIsUserAdminOrUserItself(AdminUserAccount);
 	}
 
 	/// <summary>
@@ -138,10 +137,42 @@ public class AuthorizationServiceTests : UnitTestBase
 	}
 
 	/// <summary>
+	/// Должен пройти проверку, если авторизованный пользователь — администратор
+	/// </summary>
+	[Fact]
+	public async Task CheckIsAdmin_ShouldPass_WhenUserIsAdmin()
+	{
+		var context = await CreateInMemoryContextAsync();
+
+		var sut = BuildSut(AdminUserAccount);
+
+		var act = () => sut.CheckIsAdmin();
+
+		act.Should().NotThrow();
+	}
+
+	/// <summary>
+	/// Должен выкинуть ошибку, если авторизованный пользователь — не администратор
+	/// </summary>
+	[Fact]
+	public async Task CheckIsAdmin_ShouldThrow_WhenUserIsNotAdmin()
+	{
+		var context = await CreateInMemoryContextAsync(x => AdminUserAccount.User!.IsAdmin = false);
+
+		var sut = BuildSut(AdminUserAccount);
+
+		var act = () => sut.CheckIsAdmin();
+
+		act.Should()
+			.Throw<ForbiddenProblem>()
+			.WithMessage("Данное действие доступно только администраторам");
+	}
+
+	/// <summary>
 	/// Должен пройти проверку при передаче правильного пользователя
 	/// </summary>
 	[Fact]
-	public async Task CheckUserPermissionRule_ShouldPass_WhenValidUser()
+	public async Task CheckIsUserAdminOrUserItself_ShouldPass_WhenValidUser()
 	{
 		await CreateInMemoryContextAsync();
 
@@ -161,14 +192,31 @@ public class AuthorizationServiceTests : UnitTestBase
 
 		var sut = BuildSut(userAccount);
 
-		sut.CheckUserPermissionRule(userAccount);
+		var act = () => sut.CheckIsUserAdminOrUserItself(userAccount);
+
+		act.Should().NotThrow();
+	}
+
+	/// <summary>
+	/// Должен пройти проверку при передаче пользователя-администратора
+	/// </summary>
+	[Fact]
+	public async Task CheckIsUserAdminOrUserItself_ShouldPass_WhenUserIsAdmin()
+	{
+		await CreateInMemoryContextAsync();
+
+		var sut = BuildSut(AdminUserAccount);
+
+		var act = () => sut.CheckIsUserAdminOrUserItself(AdminUserAccount);
+
+		act.Should().NotThrow();
 	}
 
 	/// <summary>
 	/// Должен выкинуть ошибку при передаче неправильного пользователя
 	/// </summary>
 	[Fact]
-	public async Task CheckUserPermissionRule_ShouldThrow_WhenInvalidUser()
+	public async Task CheckIsUserAdminOrUserItself_ShouldThrow_WhenInvalidUser()
 	{
 		var userAccount = new UserAccount
 		{
@@ -184,58 +232,29 @@ public class AuthorizationServiceTests : UnitTestBase
 			}
 		};
 
-		var context = await CreateInMemoryContextAsync();
-
-		context.UserAccounts.Add(userAccount);
-		await context.SaveChangesAsync();
-
-		var sut = BuildSut(
-			new List<Claim>()
-			{
-				new Claim(CustomClaims.UserIdСlaimName, AdminUserAccount.User!.Id.ToString()),
-				new Claim(CustomClaims.UserAccountIdClaimName, AdminUserAccount.Id.ToString()),
-				new Claim(CustomClaims.IsAdminClaimName, false.ToString())
-			},
-			userAccount);
-
-		var act = () => sut.CheckUserPermissionRule(userAccount);
-
-		act.Should()
-			.Throw<ForbiddenProblem>()
-			.WithMessage("Данное действие доступно администратору, " +
-				"либо лично пользователю, если он активен");
-	}
-
-	/// <summary>
-	/// Должен выкинуть ошибку при передаче неактивного пользователя
-	/// </summary>
-	[Fact]
-	public void CheckUserPermissionRule_ShouldThrow_WhenBlockedUser()
-	{
-		var userAccount = new UserAccount
+		var userAccount2 = new UserAccount
 		{
-			Login = "new",
+			Login = "newSecond",
 			PasswordHash = new byte[] { 1, 2 },
 			PasswordSalt = new byte[] { 3, 4 },
-			RevokedOn = DateTime.UtcNow,
 			User = new User
 			{
 				BirthDay = DateTimeProvider.UtcNow,
 				IsAdmin = false,
-				Name = "newUser",
+				Name = "newUserSecond",
 				Gender = Gender.Unknown,
 			}
 		};
 
-		var context = CreateInMemoryContextAsync(async x => await x.UserAccounts.AddAsync(userAccount));
+		var context = await CreateInMemoryContextAsync(x
+			=> x.UserAccounts.AddRange(userAccount, userAccount2));
 
-		var sut = BuildSut(userAccount);
+		var sut = BuildSut(userAccount2);
 
-		var act = () => sut.CheckUserPermissionRule(userAccount);
+		var act = () => sut.CheckIsUserAdminOrUserItself(userAccount);
 
 		act.Should()
 			.Throw<ForbiddenProblem>()
-			.WithMessage("Данное действие доступно администратору, " +
-				"либо лично пользователю, если он активен");
+			.WithMessage("Данное действие доступно администратору, либо лично пользователю");
 	}
 }

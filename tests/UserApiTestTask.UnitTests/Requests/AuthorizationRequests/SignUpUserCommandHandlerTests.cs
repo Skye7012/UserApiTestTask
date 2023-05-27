@@ -35,7 +35,8 @@ public class SignUpCommandHandlerTests : UnitTestBase
 
 		var handler = new SignUpCommandHandler(
 			context,
-			PasswordService);
+			PasswordService,
+			AuthorizationService);
 
 		var response = await handler.Handle(command, default);
 
@@ -60,6 +61,10 @@ public class SignUpCommandHandlerTests : UnitTestBase
 
 		PasswordService.Received(1)
 			.CreatePasswordHash(command.Password, out Arg.Any<byte[]>(), out Arg.Any<byte[]>());
+
+		AuthorizationService
+			.Received(1)
+			.CheckIsAdmin();
 	}
 
 	/// <summary>
@@ -78,7 +83,8 @@ public class SignUpCommandHandlerTests : UnitTestBase
 
 		var handler = new SignUpCommandHandler(
 			context,
-			PasswordService);
+			PasswordService,
+			AuthorizationService);
 
 		var handle = async () => await handler.Handle(command, default);
 
@@ -103,7 +109,8 @@ public class SignUpCommandHandlerTests : UnitTestBase
 
 		var handler = new SignUpCommandHandler(
 			context,
-			PasswordService);
+			PasswordService,
+			AuthorizationService);
 
 		var handle = async () => await handler.Handle(command, default);
 

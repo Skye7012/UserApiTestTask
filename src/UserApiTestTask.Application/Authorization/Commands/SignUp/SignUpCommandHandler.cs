@@ -15,23 +15,29 @@ public class SignUpCommandHandler : IRequestHandler<SignUpCommand, SignUpRespons
 {
 	private readonly IApplicationDbContext _context;
 	private readonly IPasswordService _passwordService;
+	private readonly IAuthorizationService _authorizationService;
 
 	/// <summary>
 	/// Конструктор
 	/// </summary>
 	/// <param name="context">Контекст БД</param>
 	/// <param name="passwordService">Сервис паролей</param>
+	/// <param name="authorizationService">Сервис авторизации</param>
 	public SignUpCommandHandler(
 		IApplicationDbContext context,
-		IPasswordService passwordService)
+		IPasswordService passwordService,
+		IAuthorizationService authorizationService)
 	{
 		_context = context;
 		_passwordService = passwordService;
+		_authorizationService = authorizationService;
 	}
 
 	/// <inheritdoc/>
 	public async Task<SignUpResponse> Handle(SignUpCommand request, CancellationToken cancellationToken)
 	{
+		_authorizationService.CheckIsAdmin();
+
 		var isLoginUnique = await _context.Users
 			.AllAsync(x => x.UserAccount!.Login != request.Login, cancellationToken);
 

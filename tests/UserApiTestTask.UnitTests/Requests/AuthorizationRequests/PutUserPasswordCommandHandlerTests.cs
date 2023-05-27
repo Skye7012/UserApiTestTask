@@ -68,7 +68,7 @@ public class PutUserPasswordCommandHandlerTests : UnitTestBase
 		updatedUser.RefreshTokens.Should().ContainSingle(x => x.RevokedOn == null);
 
 		AuthorizationService.Received(1)
-			.CheckUserPermissionRule(Arg.Is<UserAccount>(u => u.Id == AdminUserAccount.Id));
+			.CheckIsUserAdminOrUserItself(Arg.Is<UserAccount>(u => u.Id == AdminUserAccount.Id));
 
 		PasswordService.Received(1)
 			.CreatePasswordHash(

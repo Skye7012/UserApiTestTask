@@ -1,7 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using UserApiTestTask.Api.AuthorizationAttributes;
 using UserApiTestTask.Application.Users.Commands.DeleteUser;
 using UserApiTestTask.Application.Users.Commands.PutUser;
 using UserApiTestTask.Application.Users.Commands.RestoreUser;
@@ -33,13 +32,14 @@ public class UserController : ControllerBase
 	/// <summary>
 	/// Получить данные о пользователе
 	/// </summary>
-	/// <remarks>Доступно только администратору, либо лично пользователю, если он активен</remarks>
+	/// <remarks>Доступно администратору, либо лично пользователю</remarks>
 	/// <param name="login">Логин</param>
 	/// <param name="cancellationToken">Токен отмены</param>
 	/// <returns>Данные о пользователе</returns>
 	[HttpGet("{login}")]
 	[Authorize]
 	[ProducesResponseType(StatusCodes.Status200OK)]
+	[ProducesResponseType(StatusCodes.Status403Forbidden)]
 	[ProducesResponseType(StatusCodes.Status404NotFound)]
 	public async Task<GetUserResponse> GetAsync(
 		[FromRoute] string login,
@@ -54,8 +54,8 @@ public class UserController : ControllerBase
 	/// <returns>Активных пользователей</returns>
 	[HttpGet("ActiveUsers")]
 	[Authorize]
-	[AdminAuthorization]
 	[ProducesResponseType(StatusCodes.Status200OK)]
+	[ProducesResponseType(StatusCodes.Status403Forbidden)]
 	public async Task<GetUsersResponse> GetActiveUsersAsync(CancellationToken cancellationToken = default)
 			=> await _mediator.Send(new GetActiveUsersQuery(), cancellationToken);
 
@@ -68,9 +68,9 @@ public class UserController : ControllerBase
 	/// <returns>Пользователей старше заданного возраста</returns>
 	[HttpGet("UsersOlderThan/{age}")]
 	[Authorize]
-	[AdminAuthorization]
 	[ProducesResponseType(StatusCodes.Status200OK)]
-	public async Task<GetUsersResponse> GetActiveUsersAsync(
+	[ProducesResponseType(StatusCodes.Status403Forbidden)]
+	public async Task<GetUsersResponse> GetOlderThanGivenAgeUsersAsync(
 		[FromRoute] int age,
 		CancellationToken cancellationToken = default)
 			=> await _mediator.Send(new GetOlderThanGivenAgeUsersQuery(age), cancellationToken);
@@ -78,17 +78,18 @@ public class UserController : ControllerBase
 	/// <summary>
 	/// Обновить данные о пользователе
 	/// </summary>
-	/// <remarks>Доступно только администратору, либо лично пользователю, если он активен</remarks>
+	/// <remarks>Доступно администратору, либо лично пользователю</remarks>
 	/// <param name="login">Логин</param>
 	/// <param name="request">Запрос</param>
 	/// <param name="cancellationToken">Токен отмены</param>
 	[HttpPut("{login}")]
 	[Authorize]
 	[ProducesResponseType(StatusCodes.Status204NoContent)]
+	[ProducesResponseType(StatusCodes.Status403Forbidden)]
 	[ProducesResponseType(StatusCodes.Status404NotFound)]
 	public async Task PutAsync(
 		[FromRoute] string login,
-		PutUserRequest request,
+		[FromBody] PutUserRequest request,
 		CancellationToken cancellationToken)
 			=> await _mediator.Send(
 				new PutUserCommand(login)
@@ -107,8 +108,8 @@ public class UserController : ControllerBase
 	/// <param name="cancellationToken">Токен отмены</param>
 	[HttpPut("Restore/{login}")]
 	[Authorize]
-	[AdminAuthorization]
 	[ProducesResponseType(StatusCodes.Status204NoContent)]
+	[ProducesResponseType(StatusCodes.Status403Forbidden)]
 	[ProducesResponseType(StatusCodes.Status404NotFound)]
 	public async Task RestoreUserAsync(
 		[FromRoute] string login,
@@ -126,8 +127,8 @@ public class UserController : ControllerBase
 	/// <param name="cancellationToken">Токен отмены</param>
 	[HttpDelete("{login}")]
 	[Authorize]
-	[AdminAuthorization]
 	[ProducesResponseType(StatusCodes.Status204NoContent)]
+	[ProducesResponseType(StatusCodes.Status403Forbidden)]
 	[ProducesResponseType(StatusCodes.Status404NotFound)]
 	public async Task DeleteAsync(
 		[FromRoute] string login,

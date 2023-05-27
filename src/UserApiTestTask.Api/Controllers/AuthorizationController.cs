@@ -1,7 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using UserApiTestTask.Api.AuthorizationAttributes;
 using UserApiTestTask.Application.Authorization.Commands.PutUserLogin;
 using UserApiTestTask.Application.Authorization.Commands.PutUserPassword;
 using UserApiTestTask.Application.Authorization.Commands.Refresh;
@@ -41,9 +40,9 @@ public class AuthorizationController : ControllerBase
 	/// <returns>Идентификатор созданного пользователя</returns>
 	[HttpPost("SignUp")]
 	[Authorize]
-	[AdminAuthorization]
 	[ProducesResponseType(StatusCodes.Status201Created)]
 	[ProducesResponseType(StatusCodes.Status400BadRequest)]
+	[ProducesResponseType(StatusCodes.Status403Forbidden)]
 	public async Task<ActionResult<SignUpResponse>> SignUpAsync(
 		SignUpRequest request,
 		CancellationToken cancellationToken)
@@ -113,6 +112,7 @@ public class AuthorizationController : ControllerBase
 	[Authorize]
 	[ProducesResponseType(StatusCodes.Status204NoContent)]
 	[ProducesResponseType(StatusCodes.Status400BadRequest)]
+	[ProducesResponseType(StatusCodes.Status403Forbidden)]
 	[ProducesResponseType(StatusCodes.Status404NotFound)]
 	public async Task SignOutAsync(CancellationToken cancellationToken)
 		=> await _mediator.Send(
@@ -122,13 +122,14 @@ public class AuthorizationController : ControllerBase
 	/// <summary>
 	/// Изменить пароль аккаунта пользователя
 	/// </summary>
-	/// <remarks>Доступно только администратору, либо лично пользователю, если он активен</remarks>
+	/// <remarks>Доступно администратору, либо лично пользователю</remarks>
 	/// <param name="login">Логин</param>
 	/// <param name="request">Запрос</param>
 	/// <param name="cancellationToken">Токен отмены</param>
 	[HttpPut("ChangePassword/{login}")]
 	[Authorize]
-	[ProducesResponseType(StatusCodes.Status204NoContent)]
+	[ProducesResponseType(StatusCodes.Status200OK)]
+	[ProducesResponseType(StatusCodes.Status403Forbidden)]
 	[ProducesResponseType(StatusCodes.Status404NotFound)]
 	public async Task<PutUserPasswordResponse> PutPasswordAsync(
 		[FromRoute] string login,
@@ -145,13 +146,14 @@ public class AuthorizationController : ControllerBase
 	/// <summary>
 	/// Изменить логин аккаунта пользователя
 	/// </summary>
-	/// <remarks>Доступно только администратору, либо лично пользователю, если он активен</remarks>
+	/// <remarks>Доступно администратору, либо лично пользователю</remarks>
 	/// <param name="login">Логин</param>
 	/// <param name="request">Запрос</param>
 	/// <param name="cancellationToken">Токен отмены</param>
 	[HttpPut("ChangeLogin/{login}")]
 	[Authorize]
-	[ProducesResponseType(StatusCodes.Status204NoContent)]
+	[ProducesResponseType(StatusCodes.Status200OK)]
+	[ProducesResponseType(StatusCodes.Status403Forbidden)]
 	[ProducesResponseType(StatusCodes.Status404NotFound)]
 	public async Task<PutUserLoginResponse> PutLoginAsync(
 		[FromRoute] string login,

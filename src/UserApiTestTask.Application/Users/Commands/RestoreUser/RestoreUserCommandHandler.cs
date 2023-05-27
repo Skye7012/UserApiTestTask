@@ -11,17 +11,26 @@ namespace UserApiTestTask.Application.Users.Commands.RestoreUser;
 public class RestoreUserCommandHandler : IRequestHandler<RestoreUserCommand>
 {
 	private readonly IApplicationDbContext _context;
+	private readonly IAuthorizationService _authorizationService;
 
 	/// <summary>
 	/// Конструктор
 	/// </summary>
 	/// <param name="context">Контекст БД</param>
-	public RestoreUserCommandHandler(IApplicationDbContext context)
-		=> _context = context;
+	/// <param name="authorizationService">Сервис авторизации</param>
+	public RestoreUserCommandHandler(
+		IApplicationDbContext context,
+		IAuthorizationService authorizationService)
+	{
+		_context = context;
+		_authorizationService = authorizationService;
+	}
 
 	/// <inheritdoc/>
 	public async Task Handle(RestoreUserCommand request, CancellationToken cancellationToken)
 	{
+		_authorizationService.CheckIsAdmin();
+
 		var userAccount = await _context.UserAccounts
 			.Include(x => x.User)
 			.FirstOrDefaultAsync(x => x.Login == request.Login, cancellationToken)

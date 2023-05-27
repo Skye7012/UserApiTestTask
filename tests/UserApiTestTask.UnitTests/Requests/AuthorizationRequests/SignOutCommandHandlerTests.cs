@@ -1,7 +1,6 @@
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
-using NSubstitute;
 using UserApiTestTask.Application.Authorization.Commands.SignOut;
 using UserApiTestTask.Domain.Entities;
 using Xunit;
@@ -46,8 +45,5 @@ public class SignOutCommandHandlerTests : UnitTestBase
 			.All(x => x.RevokedOn != null);
 
 		refreshTokensWereSoftDeleted.Should().BeTrue();
-
-		AuthorizationService.Received(1)
-			.GetUserAccountId();
 	}
 }

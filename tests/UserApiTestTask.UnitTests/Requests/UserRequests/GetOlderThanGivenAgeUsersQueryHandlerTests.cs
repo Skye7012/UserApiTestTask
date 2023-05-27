@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
+using NSubstitute;
 using UserApiTestTask.Application.Users.Queries.GetOlderThanGivenAgeUsers;
 using UserApiTestTask.Contracts.Common.Enums;
 using UserApiTestTask.Domain.Entities;
@@ -53,7 +54,7 @@ public class GetOlderThanGivenAgeUsersQueryHandlerTests : UnitTestBase
 			AdminUserAccount.User!.BirthDay = new DateTime(2010, 01, 01);
 		});
 
-		var handler = new GetOlderThanGivenAgeUsersQueryHandler(context, DateTimeProvider);
+		var handler = new GetOlderThanGivenAgeUsersQueryHandler(context, DateTimeProvider, AuthorizationService);
 		var result = await handler.Handle(new GetOlderThanGivenAgeUsersQuery(8), default);
 
 		result.Should().NotBeNull();
@@ -66,5 +67,9 @@ public class GetOlderThanGivenAgeUsersQueryHandlerTests : UnitTestBase
 		adminUser.BirthDay.Should().Be(AdminUserAccount.User!.BirthDay);
 		adminUser.Gender.Should().Be(AdminUserAccount.User!.Gender);
 		adminUser.IsActive.Should().Be(true);
+
+		AuthorizationService
+			.Received(1)
+			.CheckIsAdmin();
 	}
 }

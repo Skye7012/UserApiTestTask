@@ -16,7 +16,7 @@ public class SignOutCommandHandler : IRequestHandler<SignOutCommand>
 	/// Конструктор
 	/// </summary>
 	/// <param name="context">Контекст БД</param>
-	/// <param name="authorizationService"></param>
+	/// <param name="authorizationService">Сервис авторизации</param>
 	public SignOutCommandHandler(
 		IApplicationDbContext context,
 		IAuthorizationService authorizationService)

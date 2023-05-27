@@ -1,7 +1,9 @@
 using System.Threading.Tasks;
 using FluentAssertions;
+using NSubstitute;
 using UserApiTestTask.Application.Common.Exceptions;
 using UserApiTestTask.Application.Users.Queries.GetUser;
+using UserApiTestTask.Domain.Entities;
 using Xunit;
 
 namespace UserApiTestTask.UnitTests.Requests.UserRequests;
@@ -28,6 +30,10 @@ public class GetUserQueryHandlerTests : UnitTestBase
 		result.Gender.Should().Be(AdminUserAccount.User!.Gender);
 		result.BirthDay.Should().Be(AdminUserAccount.User!.BirthDay);
 		result.IsActive.Should().Be(AdminUserAccount.User!.RevokedOn == null);
+
+		AuthorizationService
+			.Received(1)
+			.CheckIsUserAdminOrUserItself(Arg.Is<UserAccount>(x => x.Id == AdminUserAccount.Id));
 	}
 
 	/// <summary>

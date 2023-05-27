@@ -59,7 +59,7 @@ public class PutUserLoginCommandHandlerTests : UnitTestBase
 		updatedUserAccount.RefreshTokens.Should().ContainSingle(x => x.RevokedOn == null);
 
 		AuthorizationService.Received(1)
-			.CheckUserPermissionRule(Arg.Is<UserAccount>(u => u.Id == AdminUserAccount.Id));
+			.CheckIsUserAdminOrUserItself(Arg.Is<UserAccount>(u => u.Id == AdminUserAccount.Id));
 
 		TokenService.Received(1)
 			.CreateRefreshToken();
@@ -114,9 +114,9 @@ public class PutUserLoginCommandHandlerTests : UnitTestBase
 				}
 			}));
 
-		var command = new PutUserLoginCommand("new")
+		var command = new PutUserLoginCommand(AdminUserAccount.Login)
 		{
-			NewLogin = AdminUserAccount.Login,
+			NewLogin = "new",
 		};
 
 		var handler = new PutUserLoginCommandHandler(

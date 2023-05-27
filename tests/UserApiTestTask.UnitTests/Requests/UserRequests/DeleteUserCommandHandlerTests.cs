@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
+using NSubstitute;
 using UserApiTestTask.Application.Common.Exceptions;
 using UserApiTestTask.Application.Users.Commands.DeleteUser;
 using Xunit;
@@ -26,7 +27,7 @@ public class DeleteUserCommandHandlerTests : UnitTestBase
 			WithSoftDelete = true,
 		};
 
-		var handler = new DeleteUserCommandHandler(context);
+		var handler = new DeleteUserCommandHandler(context, AuthorizationService);
 		await handler.Handle(command, default);
 
 		var adminUserAccount = context.UserAccounts
@@ -34,6 +35,10 @@ public class DeleteUserCommandHandlerTests : UnitTestBase
 
 		adminUserAccount.Should().NotBeNull();
 		adminUserAccount!.RevokedOn.Should().NotBeNull();
+
+		AuthorizationService
+			.Received(1)
+			.CheckIsAdmin();
 	}
 
 	/// <summary>
@@ -50,13 +55,17 @@ public class DeleteUserCommandHandlerTests : UnitTestBase
 			WithSoftDelete = false,
 		};
 
-		var handler = new DeleteUserCommandHandler(context);
+		var handler = new DeleteUserCommandHandler(context, AuthorizationService);
 		await handler.Handle(command, default);
 
 		var adminUserAccount = context.UserAccounts
 			.FirstOrDefault(x => x.Id == AdminUserAccount.Id);
 
 		adminUserAccount.Should().BeNull();
+
+		AuthorizationService
+			.Received(1)
+			.CheckIsAdmin();
 	}
 
 	/// <summary>
@@ -73,7 +82,7 @@ public class DeleteUserCommandHandlerTests : UnitTestBase
 			WithSoftDelete = true,
 		};
 
-		var handler = new DeleteUserCommandHandler(context);
+		var handler = new DeleteUserCommandHandler(context, AuthorizationService);
 		var handle = async () => await handler.Handle(command, default); ;
 
 		await handle.Should()

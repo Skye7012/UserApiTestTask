@@ -13,23 +13,29 @@ public class GetOlderThanGivenAgeUsersQueryHandler : IRequestHandler<GetOlderTha
 {
 	private readonly IApplicationDbContext _context;
 	private readonly IDateTimeProvider _dateTimeProvider;
+	private readonly IAuthorizationService _authorizationService;
 
 	/// <summary>
 	/// Конструктор
 	/// </summary>
 	/// <param name="context">Контекст БД</param>
 	/// <param name="dateTimeProvider">Провайдер даты и времени</param>
+	/// <param name="authorizationService">Сервис авторизации</param>
 	public GetOlderThanGivenAgeUsersQueryHandler(
 		IApplicationDbContext context,
-		IDateTimeProvider dateTimeProvider)
+		IDateTimeProvider dateTimeProvider,
+		IAuthorizationService authorizationService)
 	{
 		_context = context;
 		_dateTimeProvider = dateTimeProvider;
+		_authorizationService = authorizationService;
 	}
 
 	/// <inheritdoc/>
 	public async Task<GetUsersResponse> Handle(GetOlderThanGivenAgeUsersQuery request, CancellationToken cancellationToken)
 	{
+		_authorizationService.CheckIsAdmin();
+
 		var utcNow = _dateTimeProvider.UtcNow;
 
 		var users = await _context.Users

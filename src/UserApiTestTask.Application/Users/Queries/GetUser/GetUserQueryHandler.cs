@@ -33,7 +33,7 @@ public class GetUserQueryHandler : IRequestHandler<GetUserQuery, GetUserResponse
 			.FirstOrDefaultAsync(x => x.Login == request.Login, cancellationToken)
 			?? throw new UserNotFoundProblem(request.Login);
 
-		_authorizationService.CheckUserPermissionRule(userAccount);
+		_authorizationService.CheckIsUserAdminOrUserItself(userAccount);
 
 		return new GetUserResponse()
 		{

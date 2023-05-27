@@ -37,13 +37,19 @@ public class AuthorizationService : IAuthorizationService
 		=> _httpContextAccessor.HttpContext!.User.GetIsAdmin();
 
 	/// <inheritdoc/>
-	public void CheckUserPermissionRule(UserAccount userAccount)
+	public void CheckIsAdmin()
+	{
+		if (!IsAdmin())
+			throw new ForbiddenProblem("Данное действие доступно только администраторам");
+	}
+
+	/// <inheritdoc/>
+	public void CheckIsUserAdminOrUserItself(UserAccount userAccount)
 	{
 		if (IsAdmin())
 			return;
 
-		if (userAccount.Id != GetUserAccountId() || userAccount.RevokedOn != null)
-			throw new ForbiddenProblem("Данное действие доступно администратору, " +
-				"либо лично пользователю, если он активен");
+		if (userAccount.Id != GetUserAccountId())
+			throw new ForbiddenProblem("Данное действие доступно администратору, либо лично пользователю");
 	}
 }
