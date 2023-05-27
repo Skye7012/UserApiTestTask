@@ -110,6 +110,21 @@ public class UserAccount : EntityBase, ISoftDeletable
 		_refreshTokens.Add(refreshToken);
 	}
 
+	/// <summary>
+	/// Восстановить пользователя
+	/// </summary>
+	public void Restore()
+	{
+		if (User == null)
+			throw new NotIncludedProblem(nameof(User));
+
+		RevokedOn = null;
+		RevokedBy = null;
+
+		User.RevokedOn = null;
+		User.RevokedBy = null;
+	}
+
 	#region navigation Properties
 
 	/// <summary>

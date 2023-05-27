@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using UserApiTestTask.Api.AuthorizationAttributes;
 using UserApiTestTask.Application.Users.Commands.DeleteUser;
 using UserApiTestTask.Application.Users.Commands.PutUser;
+using UserApiTestTask.Application.Users.Commands.RestoreUser;
 using UserApiTestTask.Application.Users.Queries.GetActiveUsers;
 using UserApiTestTask.Application.Users.Queries.GetOlderThanGivenAgeUsers;
 using UserApiTestTask.Application.Users.Queries.GetUser;
@@ -96,6 +97,24 @@ public class UserController : ControllerBase
 					Gender = request.Gender,
 					BirthDay = request.BirthDay,
 				},
+				cancellationToken);
+
+	/// <summary>
+	/// Восстановить пользователя
+	/// </summary>
+	/// <remarks>Доступно только администратору</remarks>
+	/// <param name="login">Логин</param>
+	/// <param name="cancellationToken">Токен отмены</param>
+	[HttpPut("Restore/{login}")]
+	[Authorize]
+	[AdminAuthorization]
+	[ProducesResponseType(StatusCodes.Status204NoContent)]
+	[ProducesResponseType(StatusCodes.Status404NotFound)]
+	public async Task RestoreUserAsync(
+		[FromRoute] string login,
+		CancellationToken cancellationToken)
+			=> await _mediator.Send(
+				new RestoreUserCommand(login),
 				cancellationToken);
 
 	/// <summary>

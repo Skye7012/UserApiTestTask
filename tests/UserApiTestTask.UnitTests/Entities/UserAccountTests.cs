@@ -116,4 +116,28 @@ public class UserAccountTests : UnitTestBase
 		adminUserAccount.RefreshTokens.Should()
 			.ContainSingle(x => x.Token == TokenServiceSubstitute.RefreshTokenName + 6);
 	}
+
+	/// <summary>
+	/// Должен восстановить пользователя
+	/// </summary>
+	[Fact]
+	public async Task Restore_ShouldRestoreUser()
+	{
+		var context = await CreateInMemoryContextAsync();
+
+		context.UserAccounts.Remove(AdminUserAccount);
+		await context.SaveChangesAsync();
+		context.Instance.ChangeTracker.Clear();
+
+		var adminUserAccount = context.UserAccounts
+			.Include(x => x.User)
+			.First(x => x.Id == AdminUserAccount.Id);
+
+		adminUserAccount.Restore();
+
+		adminUserAccount.RevokedOn.Should().BeNull();
+		adminUserAccount.RevokedBy.Should().BeNull();
+		adminUserAccount.User!.RevokedOn.Should().BeNull();
+		adminUserAccount.User!.RevokedBy.Should().BeNull();
+	}
 }
