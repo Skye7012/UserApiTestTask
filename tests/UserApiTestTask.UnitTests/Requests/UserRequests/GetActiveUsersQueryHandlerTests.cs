@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
+using NSubstitute;
 using UserApiTestTask.Application.Users.Queries.GetActiveUsers;
 using UserApiTestTask.Contracts.Common.Enums;
 using UserApiTestTask.Domain.Entities;
@@ -55,7 +56,7 @@ public class GetActiveUsersQueryHandlerTests : UnitTestBase
 		context.UserAccounts.Remove(userAccountToRemove);
 		await context.SaveChangesAsync();
 
-		var handler = new GetActiveUsersQueryHandler(context);
+		var handler = new GetActiveUsersQueryHandler(context, AuthorizationService);
 		var result = await handler.Handle(new GetActiveUsersQuery(), default);
 
 		result.Should().NotBeNull();
@@ -71,5 +72,9 @@ public class GetActiveUsersQueryHandlerTests : UnitTestBase
 		adminUser.BirthDay.Should().Be(AdminUserAccount.User!.BirthDay);
 		adminUser.Gender.Should().Be(AdminUserAccount.User!.Gender);
 		adminUser.IsActive.Should().Be(true);
+
+		AuthorizationService
+			.Received(1)
+			.CheckIsAdmin();
 	}
 }

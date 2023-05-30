@@ -32,10 +32,15 @@ public interface IAuthorizationService
 	bool IsAdmin();
 
 	/// <summary>
-	/// Проверить, что переданный пользователь соответствует аутентифицированному,
-	///  и что переданный пользователь активен<br/>
-	/// Либо аутентифицированный пользователь является администратором
+	/// Проверить, что авторизованный пользователь является активным администратором
+	/// </summary>
+	void CheckIsAdmin();
+
+	/// <summary>
+	/// Проверить, что переданный пользователь соответствует аутентифицированному, 
+	/// либо является администратором<br/>
+	/// Пользователь также должен быть активным
 	/// </summary>
 	/// <param name="userAccount">Аккаунт пользователя</param>
-	void CheckUserPermissionRule(UserAccount userAccount);
+	void CheckIsUserAdminOrUserItself(UserAccount userAccount);
 }

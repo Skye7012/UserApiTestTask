@@ -47,7 +47,7 @@ public class PutUserLoginCommandHandler : IRequestHandler<PutUserLoginCommand, P
 			.FirstOrDefaultAsync(x => x.Login == request.Login, cancellationToken)
 			?? throw new UserNotFoundProblem(request.Login);
 
-		_authorizationService.CheckUserPermissionRule(userAccount);
+		_authorizationService.CheckIsUserAdminOrUserItself(userAccount);
 
 		var isNewLoginUnique = await _context.UserAccounts
 			.AllAsync(x => x.Login != request.NewLogin, cancellationToken);

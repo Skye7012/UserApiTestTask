@@ -34,7 +34,7 @@ public class PutUserCommandHandler : IRequestHandler<PutUserCommand>
 			.FirstOrDefaultAsync(x => x.Login == request.Login, cancellationToken)
 			?? throw new UserNotFoundProblem(request.Login);
 
-		_authorizationService.CheckUserPermissionRule(userAccount);
+		_authorizationService.CheckIsUserAdminOrUserItself(userAccount);
 
 		userAccount.User!.Name = request.Name;
 		userAccount.User!.Gender = request.Gender;

@@ -3,9 +3,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using NSubstitute;
 using UserApiTestTask.Application.Common.Exceptions;
 using UserApiTestTask.Application.Users.Commands.PutUser;
 using UserApiTestTask.Contracts.Common.Enums;
+using UserApiTestTask.Domain.Entities;
 using Xunit;
 
 namespace UserApiTestTask.UnitTests.Requests.UserRequests;
@@ -41,6 +43,10 @@ public class PutUserCommandHandlerTests : UnitTestBase
 		adminUserAccount!.User!.BirthDay.Should().Be(command.BirthDay);
 		adminUserAccount!.User!.Gender.Should().Be(command.Gender);
 		adminUserAccount!.User!.Name.Should().Be(command.Name);
+
+		AuthorizationService
+			.Received(1)
+			.CheckIsUserAdminOrUserItself(Arg.Is<UserAccount>(x => x.Id == AdminUserAccount.Id));
 	}
 
 	/// <summary>

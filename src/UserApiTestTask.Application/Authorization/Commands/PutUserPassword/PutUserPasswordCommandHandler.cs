@@ -47,7 +47,7 @@ public class PutUserPasswordCommandHandler : IRequestHandler<PutUserPasswordComm
 			.FirstOrDefaultAsync(x => x.Login == request.Login, cancellationToken)
 			?? throw new UserNotFoundProblem(request.Login);
 
-		_authorizationService.CheckUserPermissionRule(userAccount);
+		_authorizationService.CheckIsUserAdminOrUserItself(userAccount);
 
 		if (!_passwordService.VerifyPasswordHash(request.OldPassword, userAccount.PasswordHash, userAccount.PasswordSalt))
 			throw new ValidationProblem("Введен неверный текущий пароль пользователя");

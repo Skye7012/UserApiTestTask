@@ -12,17 +12,26 @@ namespace UserApiTestTask.Application.Users.Queries.GetActiveUsers;
 public class GetActiveUsersQueryHandler : IRequestHandler<GetActiveUsersQuery, GetUsersResponse>
 {
 	private readonly IApplicationDbContext _context;
+	private readonly IAuthorizationService _authorizationService;
 
 	/// <summary>
 	/// Конструктор
 	/// </summary>
 	/// <param name="context">Контекст БД</param>
-	public GetActiveUsersQueryHandler(IApplicationDbContext context)
-		=> _context = context;
+	/// <param name="authorizationService">Сервис авторизации</param>
+	public GetActiveUsersQueryHandler(
+		IApplicationDbContext context,
+		IAuthorizationService authorizationService)
+	{
+		_context = context;
+		_authorizationService = authorizationService;
+	}
 
 	/// <inheritdoc/>
 	public async Task<GetUsersResponse> Handle(GetActiveUsersQuery request, CancellationToken cancellationToken)
 	{
+		_authorizationService.CheckIsAdmin();
+
 		var users = await _context.Users
 			.Where(x => x.RevokedOn == null)
 			.OrderBy(x => x.CreatedOn)

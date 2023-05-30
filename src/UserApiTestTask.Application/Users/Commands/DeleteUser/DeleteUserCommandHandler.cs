@@ -11,17 +11,26 @@ namespace UserApiTestTask.Application.Users.Commands.DeleteUser;
 public class DeleteUserCommandHandler : IRequestHandler<DeleteUserCommand>
 {
 	private readonly IApplicationDbContext _context;
+	private readonly IAuthorizationService _authorizationService;
 
 	/// <summary>
 	/// Конструктор
 	/// </summary>
 	/// <param name="context">Контекст БД</param>
-	public DeleteUserCommandHandler(IApplicationDbContext context)
-		=> _context = context;
+	/// <param name="authorizationService">Сервис авторизации</param>
+	public DeleteUserCommandHandler(
+		IApplicationDbContext context,
+		IAuthorizationService authorizationService)
+	{
+		_context = context;
+		_authorizationService = authorizationService;
+	}
 
 	/// <inheritdoc/>
 	public async Task Handle(DeleteUserCommand request, CancellationToken cancellationToken)
 	{
+		_authorizationService.CheckIsAdmin();
+
 		var userAccount = await _context.UserAccounts
 			.Include(x => x.User)
 			.Include(x => x.RefreshTokens)

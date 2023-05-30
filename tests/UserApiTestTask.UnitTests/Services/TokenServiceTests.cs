@@ -78,6 +78,8 @@ public class TokenServiceTests : UnitTestBase
 			.First(x => x.Type == CustomClaims.IsAdminClaimName)
 			.Value);
 
+		isAdminClaimValue.Should().Be(AdminUserAccount.User!.IsAdmin);
+
 		token.ValidTo.Should().BeCloseTo(
 			DateTime.UtcNow.AddSeconds(_jwtConfig.AccessTokenLifeTime),
 			TimeSpan.FromSeconds(1));
@@ -96,5 +98,14 @@ public class TokenServiceTests : UnitTestBase
 		token.ValidTo.Should().BeCloseTo(
 			DateTime.UtcNow.AddSeconds(_jwtConfig.RefreshTokenLifeTime),
 			TimeSpan.FromSeconds(1));
+
+		var userIdClaimValue = token.Claims
+			.First(x => x.Type == CustomClaims.IdСlaimName)
+			.Value;
+
+		userIdClaimValue.Should().NotBeNull();
+
+		Guid.TryParse(userIdClaimValue, out var result)
+			.Should().BeTrue();
 	}
 }

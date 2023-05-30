@@ -22,13 +22,14 @@ public static class ServicesConfigurator
 	/// <param name="builder">Билдер приложения</param>
 	public static void ConfigureServices(this WebApplicationBuilder builder)
 	{
-		builder.Services.AddControllers(opt =>
+		builder.Services
+			.AddControllers(opt =>
 			{
 				opt.Filters.Add<VoidAndTaskTo204NoContentFilter>();
 				opt.SuppressAsyncSuffixInActionNames = false;
 			})
 			.AddJsonOptions(opt => opt.JsonSerializerOptions.Converters
-					.Add(new StrictJsonStringEnumConverter(allowIntegerValues: false)));
+				.Add(new StrictJsonStringEnumConverter()));
 
 		builder.Services
 			.AddEndpointsApiExplorer()

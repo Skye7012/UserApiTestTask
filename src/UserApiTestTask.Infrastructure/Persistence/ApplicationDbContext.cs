@@ -118,7 +118,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
 		var login = refreshTokens.First().Entity.UserAccount!.Login;
 
-		var isLoginSame = refreshTokens.All(x => x.Entity.UserAccount!.Login == login);
+		var isLoginSame = refreshTokens
+			.Where(x => x.State != EntityState.Deleted)
+			.All(x => x.Entity.UserAccount!.Login == login);
 
 		return !isLoginSame
 			? throw new ApplicationProblem("Не удается получить валидный логин")

@@ -74,7 +74,7 @@ public class AuthorizationServiceSubstitute : IAuthorizationService, ISubstitute
 		=> _service.GetUserId();
 
 	/// <inheritdoc/>
-	public Guid GetUserAccountId()
+	public virtual Guid GetUserAccountId()
 		=> _service.GetUserAccountId();
 
 	/// <inheritdoc/>
@@ -82,6 +82,10 @@ public class AuthorizationServiceSubstitute : IAuthorizationService, ISubstitute
 		=> _service.IsAdmin();
 
 	/// <inheritdoc/>
-	public virtual void CheckUserPermissionRule(UserAccount userAccount)
-		=> _service.CheckUserPermissionRule(userAccount);
+	public virtual void CheckIsAdmin()
+		=> _service.CheckIsAdmin();
+
+	/// <inheritdoc/>
+	public virtual void CheckIsUserAdminOrUserItself(UserAccount userAccount)
+		=> _service.CheckIsUserAdminOrUserItself(userAccount);
 }
