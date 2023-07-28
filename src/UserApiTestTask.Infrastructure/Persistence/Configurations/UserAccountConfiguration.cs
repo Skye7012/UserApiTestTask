@@ -20,9 +20,6 @@ public class UserAccountConfiguration : EntityBaseConfiguration<UserAccount>
 		builder.Property(e => e.PasswordHash);
 		builder.Property(e => e.PasswordSalt);
 
-		builder.Property(e => e.RevokedBy);
-		builder.Property(e => e.RevokedOn);
-
 		builder.HasIndex(e => e.Login)
 			.IsUnique();
 

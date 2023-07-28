@@ -18,9 +18,6 @@ public class RefreshTokenConfiguration : EntityBaseConfiguration<RefreshToken>
 
 		builder.Property(e => e.Token);
 
-		builder.Property(e => e.RevokedBy);
-		builder.Property(e => e.RevokedOn);
-
 		builder.HasIndex(e => e.Token)
 			.IsUnique();
 

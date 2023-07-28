@@ -6,12 +6,12 @@ namespace UserApiTestTask.Domain.Entities.Common;
 public interface ISoftDeletable
 {
 	/// <summary>
-	/// Дата удаления пользователя
+	/// Дата удаления
 	/// </summary>
 	public DateTime? RevokedOn { get; set; }
 
 	/// <summary>
-	/// Логин Пользователя, от имени которого этот пользователь удалён
+	/// Логин Пользователя, удалившего сущность
 	/// </summary>
 	public string? RevokedBy { get; set; }
 }

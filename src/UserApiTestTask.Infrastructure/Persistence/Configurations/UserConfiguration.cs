@@ -20,9 +20,6 @@ public class UserConfiguration : EntityBaseConfiguration<User>
 		builder.Property(e => e.BirthDay);
 		builder.Property(e => e.IsAdmin);
 
-		builder.Property(e => e.RevokedBy);
-		builder.Property(e => e.RevokedOn);
-
 		builder.HasOne(e => e.UserAccount)
 			.WithOne(e => e.User)
 			.HasForeignKey<User>(e => e.UserAccountId)

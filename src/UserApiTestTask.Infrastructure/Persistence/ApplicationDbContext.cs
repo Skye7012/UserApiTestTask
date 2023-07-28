@@ -5,6 +5,7 @@ using UserApiTestTask.Application.Common.Interfaces.CacheRepositories;
 using UserApiTestTask.Domain.Entities;
 using UserApiTestTask.Domain.Entities.Common;
 using UserApiTestTask.Domain.Exceptions;
+using UserApiTestTask.Infrastructure.Extensions;
 using UserApiTestTask.Infrastructure.InitExecutors;
 
 namespace UserApiTestTask.Infrastructure.Persistence;
@@ -51,7 +52,16 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
 	/// <inheritdoc/>
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
-		=> modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+	{
+		base.OnModelCreating(modelBuilder);
+		modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+
+		foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+		{
+			if (typeof(ISoftDeletable).IsAssignableFrom(entityType.ClrType))
+				entityType.AddISoftDeletableFields();
+		}
+	}
 
 	/// <inheritdoc/>
 	public override int SaveChanges()
